@@ -31,7 +31,7 @@ elements <- data.frame(matrix(unlist(strsplit(Filter(stringFilter, names(PyMCADa
 
 #periodicTable <- read.csv(tk_choose.files(),header=TRUE)
  
-#helper to translate
+#helper to translate variable names to correct greek letters(Ka,Kb) and indices(L1,L2..)
 translateElementLine <- function(name) {
   n1 <- sub("[.]([LM])(.)"," ~ \\1[\\2]",fixed=FALSE,
             sub("[.]Ka"," ~ K * alpha",
