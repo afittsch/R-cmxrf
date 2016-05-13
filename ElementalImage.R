@@ -17,7 +17,7 @@ dirchooser<-function(default = "", caption = "Select directory") {
 	else choose.files()
 }
 	
-#Only read PyMCAData once per session
+#read PyMCAData once per session only
 if (length(ls(pattern="^PyMCAData$"))==0) {
 	filename <- filechooser(caption="Select Data File", multi = FALSE, filters = filters)
 	PyMCAData <- read.table(filename, header=TRUE)
