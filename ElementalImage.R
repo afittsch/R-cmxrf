@@ -21,6 +21,15 @@ dirchooser<-function(default = "", caption = "Select directory") {
 if (length(ls(pattern="^PyMCAData$"))==0) {
 	filename <- filechooser(caption="Select Data File", multi = FALSE, filters = filters)
 	PyMCAData <- read.table(filename, header=TRUE)
+	# the following attributes need to be set by the user (until the instrument writes a spec file)
+	# [3] Matrix dimensions (x,y,z) # elements
+	attr(PyMCAData, "Matrix") <- c(1,410,430)
+	# [3] Stepsize in um (x,y,z)
+	attr(PyMCAData, "Stepsize") <- c(0,10,10)
+	# [4] clear text name of tube, device # (to be able to distinguish different instruments, currently =1001), KV, mA
+	attr(PyMCAData, "Tube") <- c("XOS Fittschen",1001,50,1)
+	# [2] Detector Nmae, device # device # (to be able to distinguish different instruments, currently =2001)
+	attr(PyMCAData, "Detector") <- c("Vortex Fittschen",2001)
 }
 
 #helper to detect element and emission-lines only
