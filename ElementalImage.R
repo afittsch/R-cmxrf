@@ -33,10 +33,25 @@ elements <- data.frame(matrix(unlist(strsplit(Filter(stringFilter, names(PyMCADa
  
 #helper to translate variable names to correct greek letters(Ka,Kb) and indices(L1,L2..)
 translateElementLine <- function(name) {
-  n1 <- sub("[.]([LM])(.)"," ~ \\1[\\2]",fixed=FALSE,
-            sub("[.]Ka"," ~ K * alpha",
-                sub("[.]Kb"," ~ K * beta",name)))
-  parse(text = n1)
+  if (is.symbol(name)) {
+    ns = as.character(name)
+    n1 <- sub("[.]([LM])(.)"," ~ \\1[\\2]",fixed=FALSE,
+              sub("[.]Ka"," ~ K * alpha",
+                  sub("[.]Kb"," ~ K * beta",name)))
+    exp <- parse(text = n1)
+    if (length(exp)==1) return(exp[[1]])
+  } 
+  name
+}
+
+translateExpression <- function(e) {
+  if (is.symbol(e)) return(translateElementLine(e))
+  if (is.call(e)) {
+    if(length(e) >= 2) {
+      return(as.call(c(e[[1]], lapply(e[-1],translateExpression))))
+    }
+  }
+  e
 }
 
 correlationPlot <- function(x,y, data=PyMCAData) {
