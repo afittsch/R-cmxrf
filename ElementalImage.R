@@ -85,3 +85,4 @@ countMap <- function(x,data=PyMCAData) {
              
   title(xname)
   axis(2,seq(0,4,by=4/25))
+}
