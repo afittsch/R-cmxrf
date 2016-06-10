@@ -65,10 +65,23 @@ translateExpression <- function(e) {
 
 correlationPlot <- function(x,y, data=PyMCAData) {
   m=match.call()
-  xname<-translateElementLine(paste(m$x,"~ '[counts]'"))
-  yname<-translateElementLine(paste(m$y,"~ '[counts]'"))
+  xname<-translateExpression(substitute(x ~ group("[",count,"]"),list(x=m$x)))
+  yname<-translateExpression(substitute(y ~ group("[",count,"]"),list(y=m$y)))
   x <- eval(substitute(x),data,parent.frame())
   y <- eval(substitute(y),data,parent.frame())
   plot(x,y,xlab=xname,ylab=yname)
 }
 
+countMap <- function(x,data=PyMCAData) {
+  print(m$x)
+  xname<-translateExpression(call("*",m$x,' [counts]'))
+  x <- eval(substitute(x),data,parent.frame())
+  mat <- attr(data,"Matrix")
+  dimension <- attr(data,"Stepsize")
+  xmax <- mat[[2]]*dimension[[2]]
+  ymax <- mat[[3]]*dimension[[3]]
+  image.plot(matrix(x,ncol = attr(data,"Matrix")[[2]]),
+             axes = FALSE)
+             
+  title(xname)
+  axis(2,seq(0,4,by=4/25))
