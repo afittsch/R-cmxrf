@@ -73,16 +73,17 @@ correlationPlot <- function(x,y, data=PyMCAData) {
 }
 
 countMap <- function(x,data=PyMCAData) {
-  print(m$x)
+  m=match.call()
   xname<-translateExpression(call("*",m$x,' [counts]'))
   x <- eval(substitute(x),data,parent.frame())
   mat <- attr(data,"Matrix")
   dimension <- attr(data,"Stepsize")
   xmax <- mat[[2]]*dimension[[2]]
   ymax <- mat[[3]]*dimension[[3]]
-  image.plot(matrix(x,ncol = attr(data,"Matrix")[[2]]),
-             axes = FALSE)
-             
+  xs <- seq(0,xmax,by=dimension[[2]])
+  ys <- seq(0,ymax,by=dimension[[3]])
+  zs <- matrix(x,ncol = mat[[3]])
+  image.plot(x=xs, y=ys, zs,
+             xlab=quote(group("[",mu * m,"]")),ylab=quote(group("[",mu * m,"]")), asp=1)
   title(xname)
-  axis(2,seq(0,4,by=4/25))
 }
