@@ -16,27 +16,38 @@ dirchooser<-function(default = "", caption = "Select directory") {
 	if(Sys.info()["sysname"] == "Linux") tk_choose.dir(default,caption)
 	else choose.files()
 }
-	
+
+#Read Data from PyMCA	
+readCMXRF <- function(filename) {
+  Data <- read.table(filename, header=TRUE)
+  # the following attributes need to be set by the user (until the instrument writes a spec file)
+  # [3] Matrix dimensions (x,y,z) # elements
+  attr(Data, "Matrix") <- c(1,410,430)
+  # [3] Stepsize in um (x,y,z)
+  attr(Data, "Stepsize") <- c(0,10,10)
+  # [4] clear text name of tube, device # (to be able to distinguish different instruments, currently =1001), KV, mA
+  attr(Data, "Tube") <- c("XOS Fittschen",1001,50,1)
+  # [2] Detector Nmae, device # device # (to be able to distinguish different instruments, currently =2001)
+  attr(Data, "Detector") <- c("Vortex Fittschen",2001)
+  # 
+  attr(Data, "filename") <- filename
+  Data
+}
+
+readPyMCAData <- function(filename=filechooser(caption="Select Data File", multi = FALSE, filters = filters)) {
+  PyMCAData<<- readCMXRF(filename)
+}
 #read PyMCAData once per session only
 if (length(ls(pattern="^PyMCAData$"))==0) {
-	filename <- filechooser(caption="Select Data File", multi = FALSE, filters = filters)
-	PyMCAData <- read.table(filename, header=TRUE)
-	# the following attributes need to be set by the user (until the instrument writes a spec file)
-	# [3] Matrix dimensions (x,y,z) # elements
-	attr(PyMCAData, "Matrix") <- c(1,410,430)
-	# [3] Stepsize in um (x,y,z)
-	attr(PyMCAData, "Stepsize") <- c(0,10,10)
-	# [4] clear text name of tube, device # (to be able to distinguish different instruments, currently =1001), KV, mA
-	attr(PyMCAData, "Tube") <- c("XOS Fittschen",1001,50,1)
-	# [2] Detector Nmae, device # device # (to be able to distinguish different instruments, currently =2001)
-	attr(PyMCAData, "Detector") <- c("Vortex Fittschen",2001)
+	readPyMCAData()
 }
 
 #helper to detect element and emission-lines only
 stringFilter <- function(s){!(length(grep("^((s.+\\..+)|([^.]*))$",s))>0)}
 
 #list of elements contained in the dat file
-elements <- data.frame(matrix(unlist(strsplit(Filter(stringFilter, names(PyMCAData)),"[.]")),ncol=2,byrow=TRUE))
+elements <- function(Data) { data.frame(matrix(unlist(strsplit(Filter(stringFilter, names(Data)),"[.]")),ncol=2,byrow=TRUE))}
+
 
 #periodicTable <- read.csv(tk_choose.files(),header=TRUE)
  
