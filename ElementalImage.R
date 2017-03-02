@@ -42,6 +42,8 @@ if (length(ls(pattern="^PyMCAData$"))==0) {
 	readPyMCAData()
 }
 
+
+
 #helper to detect element and emission-lines only
 stringFilter <- function(s){!(length(grep("^((s.+\\..+)|([^.]*))$",s))>0)}
 
@@ -88,7 +90,7 @@ countMap <- function(x,data=PyMCAData) {
   xname<-translateExpression(call("*",m$x,' [counts]'))
   x <- eval(substitute(x),data,parent.frame())
   mat <- attr(data,"Matrix")
-  dimension <- attr(data,"Stepsize")
+dimension <- attr(data,"Stepsize")
   xmax <- mat[[2]]*dimension[[2]]
   ymax <- mat[[3]]*dimension[[3]]
   xs <- seq(0,xmax,by=dimension[[2]])
