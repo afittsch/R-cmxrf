@@ -1,0 +1,123 @@
+---
+title: "Knife-Edge Scan"
+output: html_notebook
+---
+```{r}
+library(smoother)
+source("ElementalImage.R")
+source("rsum.R")
+
+
+```
+
+Knife-edge scan to determine the spot size of the µXRF instrument in the Fittschen Group at the Washington State University, Pullman, WA
+
+##Fe-Knife Edge (Razor Blade)
+
+We collect several scans in a row and use PyMCA to batch-fit the measured spectra and determine the counts for specific elements/lines
+
+```{r}
+readPyMCAData("data/B0216-1325-000001_to_000480.dat")
+scanData <- PyMCAData$Fe.Ka
+
+plot(scanData, type="l",ylab="counts")
+title(quote(Fe ~ K*alpha))
+```
+```{r}
+numScans <-6
+samplesPerScan <- length(scanData)/numScans
+stepWidth <- 2
+
+```
+
+As we can see there are `r numScans` spectra and `r samplesPerScan` samples per scan. The step size was `r stepWidth` µm.
+
+```{r}
+knifeList<-split(scanData,rep(1:numScans, each = samplesPerScan))
+plot(NULL,xlim = c(0,samplesPerScan*stepWidth), ylim=c(min(scanData),max(scanData)), xlab=quote(position*group("[",mu*m,"]")), ylab="counts",type="n")
+title(quote(Fe*K*alpha))
+res <- mapply(lines, y=knifeList,MoreArgs = list(x=seq(samplesPerScan)*stepWidth))
+
+```
+
+For the existing functions we need the rising edge of the knife-edge, so we reverse the data. The first scan is taken too early after turning on the tube, so we will remove this scan. 
+
+
+```{r, message=FALSE}
+knifeList<-split(scanData[length(scanData):(1+samplesPerScan)],rep(1:(numScans-1), each = samplesPerScan))
+plot(NULL,xlim = c(0,samplesPerScan*stepWidth), ylim=c(min(scanData),max(scanData)), xlab=quote(position*group("[",mu*m,"]")), ylab="counts",type="n")
+
+res <- mapply(lines, y=knifeList,MoreArgs = list(x=seq(samplesPerScan)*stepWidth))
+res <- title(quote(Fe*K*alpha))
+
+```
+Better... But the z-stage is too incaurate, so we will shift the scans for better alignment. The scns are aligned at the half hight of the y signal. 
+
+```{r fig.width=4, fig.height=4}
+par(mar=c(5,4,4,5)+.1)
+plotCentered <- function(scanList, width=stepWidth, window=0.15) {
+  ycenter <- max(unlist(scanList))/2
+  xoffset<-mapply(function(s) {uniroot(approxfun(s-ycenter),lower=1,upper=length(s))$root},scanList)
+  plot(NULL,xlim = c(-max(xoffset),samplesPerScan-min(xoffset))*width,type="n",ylim=c(0,2*ycenter), xlab=quote(group("[",mu * m,"]")),ylab="Counts")
+  res <- title(quote(Fe*K*alpha* " centered"))
+  res <- mapply(function(s,x){lines(x=(seq(samplesPerScan)-x)*width,y=s)},scanList,xoffset)
+}
+
+plotCentered(knifeList,stepWidth,10)
+
+```
+
+Looks good. Do we need some statistic verification? Standard deviation,..?
+
+
+
+## Beam Width Fe K$\alpha$
+
+The calculation of the FWHM involves numerical differentiation which magnifies noise. To get dependable results we need to filter/smooth the input values. We use a gausian filter, with a parameterized window size. A wider window means moother curves but also a numerical wider spotbsize.  
+
+```{r}
+knifedges <- mapply(function(window) {r <- knifeEdge(knifeList[[1]],width=2,window=window); title(paste("Window=",window)); r}, window=c(3,4,5,6,7,8,9,10,12,14,18,22))
+
+```
+
+Standard deviation for 5 measurements with window size=11
+```{r}
+res <- mapply(knifeEdge,knifeList,MoreArgs = list(width=2, window=11, plotit=FALSE))
+knifeEdgeFWHM <- unlist(res["FWHM",])
+
+```
+
+The mean beam size is `r mean(knifeEdgeFWHM)`
+The Standard deviation is `r sd(knifeEdgeFWHM)` 
+equals `r sd(knifeEdgeFWHM)/mean(knifeEdgeFWHM)*100` %
+
+# Knife Edge Scan Tungsten
+
+Calculated beam width for window sizes 3-14
+
+```{r}
+readPyMCAData("data/B0221-1426-000001_to_000050.dat")
+scanData <- PyMCAData$W.L3
+
+knifedges <- mapply(knifeEdge, window=c(3:14),MoreArgs = list(scan=rev(scanData),width=2,plotit=FALSE))
+library(knitr)
+kable(data.frame(width=c(3:14),window=unlist(knifedges["FWHM",1:12])))
+```
+The selected window width is 9 (due to constraints from the publication ;-)
+
+```{r fig.width=4, fig.height=4}
+par(mar=c(5,4,4,5)+.1)
+res <- knifeEdge(rev(scanData),2,9,plotit = FALSE)
+plot(x=seq_along(scanData)*stepWidth,y=rev(scanData),xlab = quote("distance "*group("[",mu*m,"]")),ylab = "counts")
+lines(x=seq_along(scanData)*stepWidth,y=res$smoothSpec)
+par(new=TRUE,lty=2)
+plot(x=seq_along(res$FWHM.plot)*stepWidth,y=res$FWHM.plot,type="l",xaxt="n",yaxt="n",xlab="",ylab="")
+axis(4)
+mtext(quote(group("[",counts/mu*m,"]")),side=4,line=3)
+par(lty=1)
+lines(res$FWHM.coord)
+text(res$FWHM.coord$x[2],res$FWHM.coord$y[2],bquote("  FWHM = "*.(round(res$FWHM,1)) ~ mu*m),adj=c(0,0))
+
+
+```
+
